@@ -1,0 +1,362 @@
+{% extends "tiim/base.html" %}
+{% block title %}TIÏM – Interface Pharmacien{% endblock %}
+{% block content %}
+<style>
+  .page-header {
+    background: linear-gradient(150deg, #03183a 0%, #0c447c 55%, #185fa5 100%);
+    color: #fff; padding: 28px 24px 40px;
+  }
+  .page-header-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-icon {
+    width: 52px; height: 52px; background: rgba(255,255,255,.12);
+    border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .header-icon i { font-size: 26px; color: #fff; }
+
+  .pharma-grid { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+  @media (max-width: 860px) { .pharma-grid { grid-template-columns: 1fr; } }
+
+  .scan-cam {
+    background: #0d1117; border-radius: 10px;
+    padding: 22px; text-align: center; margin-bottom: 16px; cursor: pointer;
+    border: 0.5px solid #1f2937; transition: border-color .2s;
+  }
+  .scan-cam:hover { border-color: #378add; }
+  .cam-icon {
+    width: 52px; height: 52px; background: rgba(255,255,255,.07);
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 10px;
+  }
+  .cam-icon i { font-size: 24px; color: #9ca3af; }
+  .cam-label { color: #e5e7eb; font-size: 13px; font-weight: 600; }
+  .cam-sub   { color: #6b7280; font-size: 12px; margin-top: 3px; }
+  .scan-bar  { width: 100%; height: 3px; background: #1f2937; border-radius: 2px; margin-top: 14px; overflow: hidden; }
+  .scan-bar-fill { width: 0%; height: 100%; background: #17a355; transition: width .5s; }
+
+  .pred-item {
+    border-radius: 8px; padding: 12px 14px;
+    border-left: 3px solid; border-radius: 0;
+    font-size: 13px;
+  }
+  .pred-item strong { display: block; margin-bottom: 3px; }
+  .pred-item span   { font-size: 12px; color: #6b7280; }
+  .pred-rouge { background: #fcebeb; border-left-color: #a32d2d; }
+  .pred-rouge strong { color: #791f1f; }
+  .pred-or    { background: #faeeda; border-left-color: #854f0b; }
+  .pred-or strong    { color: #633806; }
+  .pred-vert  { background: #eaf3de; border-left-color: #3b6d11; }
+  .pred-vert strong  { color: #27500a; }
+
+  .scan-result {
+    margin-top: 16px; padding: 16px; border-radius: 10px;
+    text-align: center;
+  }
+  .sr-ok   { background: #eaf3de; border: 1.5px solid #97c459; }
+  .sr-err  { background: #fcebeb; border: 1.5px solid #e24b4a; }
+  .sr-warn { background: #faeeda; border: 1.5px solid #ef9f27; }
+  .sr-unk  { background: #f9fafb; border: 1.5px solid #d1d5db; }
+  .sr-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+  .sr-icon i { font-size: 22px; }
+  .sri-ok   { background: #c0dd97; } .sri-ok i   { color: #27500a; }
+  .sri-err  { background: #f09595; } .sri-err i  { color: #791f1f; }
+  .sri-warn { background: #fac775; } .sri-warn i { color: #633806; }
+  .sri-unk  { background: #e5e7eb; } .sri-unk i  { color: #6b7280; }
+  .sr-titre { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+  .sr-ok .sr-titre   { color: #27500a; }
+  .sr-err .sr-titre  { color: #791f1f; }
+  .sr-warn .sr-titre { color: #633806; }
+  .sr-unk .sr-titre  { color: #6b7280; }
+  .sr-detail { font-size: 13px; color: #374151; }
+
+  .verif-row td { vertical-align: middle; }
+</style>
+
+<!-- ── EN-TÊTE ── -->
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="header-icon">
+      <i class="ti ti-building-store" aria-hidden="true"></i>
+    </div>
+    <div>
+      <h1 style="font-size:21px; font-weight:700; margin-bottom:4px;">Interface Pharmacien — Pharmacie Centrale</h1>
+      <p style="font-size:13px; opacity:.75; display:flex; align-items:center; gap:12px;">
+        <span><i class="ti ti-package" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Gestionnaire de stocks</span>
+        <span><i class="ti ti-shield-check" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Vérificateur d'authenticité</span>
+        <span><i class="ti ti-bell" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Alertes en temps réel</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Alertes -->
+  {% if alerte %}
+  <div class="alert alert-succes">
+    <i class="ti ti-circle-check" aria-hidden="true"></i>
+    {{ alerte.message }}
+  </div>
+  {% endif %}
+  {% if alertes_stock %}
+  <div class="alert alert-warning">
+    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+    <span><strong>{{ alertes_stock|length }} produit(s) en alerte :</strong>
+    {% for a in alertes_stock %}{{ a.nom }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-value">{{ stocks|length }}</div>
+      <div class="stat-label">Références en stock</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#a32d2d;">{{ alertes_stock|length }}</div>
+      <div class="stat-label">Alertes actives</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#185fa5;">312</div>
+      <div class="stat-label">Scans ce mois</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#854f0b;">2</div>
+      <div class="stat-label">Lots suspects détectés</div>
+    </div>
+  </div>
+
+  <div class="pharma-grid">
+
+    <!-- ── COLONNE PRINCIPALE ── -->
+    <div>
+
+      <!-- Inventaire stocks -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">
+          <i class="ti ti-package" aria-hidden="true"></i>
+          Inventaire des stocks
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Médicament</th>
+                <th>N° Lot</th>
+                <th>Quantité</th>
+                <th>Expiration</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in stocks %}
+              <tr>
+                <td><strong>{{ s.nom }}</strong></td>
+                <td><span style="font-family:monospace; font-size:12px; color:#9ca3af;">{{ s.lot }}</span></td>
+                <td><strong>{{ s.qte }}</strong> <span style="color:#9ca3af; font-size:12px;">unités</span></td>
+                <td style="font-size:13px; color:#6b7280;">{{ s.expiration }}</td>
+                <td>
+                  {% if s.statut == "ok" %}
+                    <span class="badge badge-ok">
+                      <i class="ti ti-circle-check" aria-hidden="true"></i> Normal
+                    </span>
+                  {% elif s.statut == "alerte" %}
+                    <span class="badge badge-alerte">
+                      <i class="ti ti-alert-triangle" aria-hidden="true"></i> Faible
+                    </span>
+                  {% else %}
+                    <span class="badge badge-critique">
+                      <i class="ti ti-alert-circle" aria-hidden="true"></i> Critique
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if s.statut != "ok" %}
+                  <form method="post" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="commander">
+                    <button type="submit" class="btn btn-sm btn-outline">
+                      <i class="ti ti-truck-delivery" aria-hidden="true"></i> Commander
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dernières vérifications -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          Dernières vérifications
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Médicament</th>
+                <th>Code</th>
+                <th>Résultat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="verif-row">
+                <td style="color:#9ca3af; font-size:13px;">14:32</td>
+                <td>Artémisinine 80mg</td>
+                <td><span style="font-family:monospace; font-size:12px; color:#6b7280;">TY-2024-0042-A1</span></td>
+                <td><span class="badge badge-authentique"><i class="ti ti-circle-check" aria-hidden="true"></i> Authentique</span></td>
+              </tr>
+              <tr class="verif-row">
+                <td style="color:#9ca3af; font-size:13px;">13:15</td>
+                <td>Paracétamol 1000mg</td>
+                <td><span style="font-family:monospace; font-size:12px; color:#6b7280;">TY-2025-0017-C3</span></td>
+                <td><span class="badge badge-authentique"><i class="ti ti-circle-check" aria-hidden="true"></i> Authentique</span></td>
+              </tr>
+              <tr class="verif-row">
+                <td style="color:#9ca3af; font-size:13px;">11:47</td>
+                <td>Amoxicilline 500mg</td>
+                <td><span style="font-family:monospace; font-size:12px; color:#6b7280;">TY-2024-0099-B2</span></td>
+                <td><span class="badge badge-alerte"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Suspect</span></td>
+              </tr>
+              <tr class="verif-row">
+                <td style="color:#9ca3af; font-size:13px;">10:02</td>
+                <td style="color:#6b7280;">Inconnu</td>
+                <td><span style="font-family:monospace; font-size:12px; color:#6b7280;">TY-2024-FAKE-XX</span></td>
+                <td><span class="badge badge-critique"><i class="ti ti-ban" aria-hidden="true"></i> Contrefait</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── COLONNE LATÉRALE ── -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Scanner -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-qrcode" aria-hidden="true"></i>
+          Scanner un médicament
+        </div>
+        <div class="scan-cam" onclick="scanAuto()">
+          <div class="cam-icon">
+            <i class="ti ti-camera" aria-hidden="true"></i>
+          </div>
+          <div class="cam-label">Caméra — Scanner QR</div>
+          <div class="cam-sub">Cliquez pour simuler</div>
+          <div class="scan-bar">
+            <div class="scan-bar-fill" id="scan-progress"></div>
+          </div>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="scan">
+          <div class="form-group">
+            <label>Ou saisir le code manuellement</label>
+            <input type="text" name="code_scan" id="code_scan"
+              value="{{ code_scan }}"
+              placeholder="TY-XXXX-XXXX-XX"
+              style="font-family:monospace; text-transform:uppercase;">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="ti ti-search" aria-hidden="true"></i> Vérifier
+          </button>
+        </form>
+
+        {% if scan_resultat %}
+        <div class="scan-result
+          {% if scan_resultat.statut == 'authentique' %}sr-ok
+          {% elif scan_resultat.statut == 'contrefait' %}sr-err
+          {% elif scan_resultat.statut == 'suspect' %}sr-warn
+          {% else %}sr-unk{% endif %}">
+          <div class="sr-icon
+            {% if scan_resultat.statut == 'authentique' %}sri-ok
+            {% elif scan_resultat.statut == 'contrefait' %}sri-err
+            {% elif scan_resultat.statut == 'suspect' %}sri-warn
+            {% else %}sri-unk{% endif %}">
+            <i class="ti
+              {% if scan_resultat.statut == 'authentique' %}ti-circle-check
+              {% elif scan_resultat.statut == 'contrefait' %}ti-ban
+              {% elif scan_resultat.statut == 'suspect' %}ti-alert-triangle
+              {% else %}ti-question-mark{% endif %}"
+              aria-hidden="true"></i>
+          </div>
+          <div class="sr-titre">
+            {% if scan_resultat.statut == 'authentique' %}Authentique
+            {% elif scan_resultat.statut == 'contrefait' %}Contrefait — Ne pas vendre
+            {% elif scan_resultat.statut == 'suspect' %}Suspect — À signaler
+            {% else %}Code inconnu{% endif %}
+          </div>
+          {% if scan_resultat.nom %}
+          <div class="sr-detail">
+            <strong>{{ scan_resultat.nom }}</strong><br>
+            <span style="font-size:12px; color:#9ca3af;">{{ scan_resultat.fabricant }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Prédictions IA -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-brain" aria-hidden="true"></i>
+          Prédiction IA — Ruptures
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="pred-item pred-rouge">
+            <strong>
+              <i class="ti ti-alert-circle" style="font-size:13px; vertical-align:-1px;" aria-hidden="true"></i>
+              Rupture dans 2 semaines
+            </strong>
+            <span>Métronidazole 250mg — Stock actuel : 8 unités</span>
+          </div>
+          <div class="pred-item pred-or">
+            <strong>
+              <i class="ti ti-clock" style="font-size:13px; vertical-align:-1px;" aria-hidden="true"></i>
+              À surveiller dans 4 semaines
+            </strong>
+            <span>Amoxicilline 500mg — Consommation +34 %</span>
+          </div>
+          <div class="pred-item pred-vert">
+            <strong>
+              <i class="ti ti-circle-check" style="font-size:13px; vertical-align:-1px;" aria-hidden="true"></i>
+              Stock suffisant 6 semaines
+            </strong>
+            <span>Artémisinine 80mg — Saison des pluies anticipée</span>
+          </div>
+        </div>
+        <div style="font-size:11px; color:#9ca3af; margin-top:12px; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px;">
+          <i class="ti ti-robot" style="font-size:13px;" aria-hidden="true"></i>
+          Fiabilité : 94 % · Mis à jour il y a 2h
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function scanAuto() {
+  const codes = ['TY-2024-0042-A1','TY-2024-0099-B2','TY-2025-0017-C3','TY-2024-FAKE-XX'];
+  const code = codes[Math.floor(Math.random()*codes.length)];
+  let w = 0;
+  const t = setInterval(() => {
+    w += 20;
+    document.getElementById('scan-progress').style.width = w + '%';
+    if (w >= 100) { clearInterval(t); document.getElementById('code_scan').value = code; }
+  }, 100);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends "tiim/base.html" %}
+{% load static %}
+{% block title %}TIÏM – Tableau de bord National{% endblock %}
+{% block content %}
+<style>
+  .page-header {
+    background: linear-gradient(150deg, #1a0404 0%, #791f1f 55%, #a32d2d 100%);
+    color: #fff; padding: 28px 24px 40px;
+  }
+  .page-header-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-icon {
+    width: 52px; height: 52px; background: rgba(255,255,255,.12);
+    border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .header-icon i { font-size: 26px; color: #fff; }
+
+  .pulse-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.15); border: 0.5px solid rgba(255,255,255,.3);
+    border-radius: 100px; padding: 6px 14px;
+    font-size: 13px; font-weight: 600; color: #fff;
+    animation: pulse 2s infinite;
+  }
+  .pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #f09595; flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .risque-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 100px;
+    font-size: 11px; font-weight: 700;
+  }
+  .risque-badge i { font-size: 11px; }
+  .risque-faible   { background: #eaf3de; color: #27500a; }
+  .risque-moyen    { background: #faeeda; color: #633806; }
+  .risque-eleve    { background: #fef3c7; color: #92400e; }
+  .risque-critique { background: #fcebeb; color: #791f1f; }
+
+  .gouv-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .gouv-grid { grid-template-columns: 1fr; } }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { width: 48px; text-align: right; color: #9ca3af; flex-shrink: 0; font-size: 12px; }
+  .bar-outer { flex: 1; height: 16px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .bar-inner  { height: 100%; border-radius: 4px; }
+  .bar-val { width: 52px; text-align: right; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+
+  .alerte-item {
+    padding: 12px 14px; border-radius: 8px;
+    border-left: 3px solid; border-radius: 0;
+  }
+  .alerte-haute  { background: #fcebeb; border-left-color: #a32d2d; }
+  .alerte-moyenne { background: #faeeda; border-left-color: #854f0b; }
+  .alerte-prod { font-weight: 700; font-size: 13px; color: #111827; margin-bottom: 3px; }
+  .alerte-zone { font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 5px; }
+  .alerte-zone i { font-size: 13px; }
+  .alerte-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+
+  .ia-item { padding: 12px 0; border-bottom: 0.5px solid #f3f4f6; font-size: 13px; line-height: 1.6; color: #6b7280; }
+  .ia-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .ia-item strong { color: #111827; display: block; margin-bottom: 2px; }
+  .ia-item-head { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .ia-item-head i { font-size: 16px; }
+
+  .map-legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: #6b7280; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: -1px; }
+</style>
+
+<!-- ── EN-TÊTE ── -->
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="header-icon">
+      <i class="ti ti-building-bank" aria-hidden="true"></i>
+    </div>
+    <div>
+      <h1 style="font-size:21px; font-weight:700; margin-bottom:4px;">Tableau de bord national — ANRP / Ministère de la Santé</h1>
+      <p style="font-size:13px; opacity:.75; display:flex; align-items:center; gap:12px;">
+        <span><i class="ti ti-radar" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Surveillance en temps réel</span>
+        <span><i class="ti ti-map-pin" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Burkina Faso</span>
+      </p>
+    </div>
+    <div style="margin-left:auto;">
+      <span class="pulse-badge">
+        <span class="pulse-dot"></span>
+        {{ stats.alertes_actives }} alertes actives
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── STATS NATIONALES ── -->
+  <div class="stats-grid" style="grid-template-columns:repeat(6,1fr); margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-value">1,28M</div>
+      <div class="stat-label">Vérifications totales</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#a32d2d;">8 412</div>
+      <div class="stat-label">Contrefaçons détectées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#185fa5;">{{ stats.pharmacies_connectees }}</div>
+      <div class="stat-label">Pharmacies connectées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#0d6e35;">1 840</div>
+      <div class="stat-label">Vies sauvées (estimé)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#854f0b;">{{ stats.taux_couverture }}%</div>
+      <div class="stat-label">Couverture nationale</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#a32d2d;">{{ stats.alertes_actives }}</div>
+      <div class="stat-label">Alertes actives</div>
+    </div>
+  </div>
+
+  <div class="gouv-grid">
+
+    <!-- ── COLONNE PRINCIPALE ── -->
+    <div>
+
+      <!-- Carte SVG -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">
+          <i class="ti ti-map" aria-hidden="true"></i>
+          Cartographie des risques — Burkina Faso
+        </div>
+        <img
+             src="{% static 'tiim/img/image.png' %}"
+             alt="Carte des risques médicaments — Burkina Faso"
+             style="width:100%; border-radius:8px; display:block;"
+        >
+        <!-- <div class="map-legend">
+          <span><span class="legend-dot" style="background:#0f6e56;"></span>Faible</span>
+          <span><span class="legend-dot" style="background:#ba7517;"></span>Moyen</span>
+          <span><span class="legend-dot" style="background:#d85a30;"></span>Élevé</span>
+          <span><span class="legend-dot" style="background:#a32d2d;"></span>Critique (Sahel — pulsation)</span>
+        </div>-->
+      </div>
+
+      <!-- Tableau régions -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">
+          <i class="ti ti-table" aria-hidden="true"></i>
+          Données par région
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Région</th>
+                <th>Vérifications</th>
+                <th>Contrefaçons</th>
+                <th>Risque</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in stats.regions %}
+              <tr>
+                <td><strong>{{ r.nom }}</strong></td>
+                <td>{{ r.verifications }}</td>
+                <td><span style="color:#a32d2d; font-weight:700;">{{ r.contrefaits }}</span></td>
+                <td>
+                  <span class="risque-badge risque-{{ r.risque }}">
+                    {% if r.risque == "faible" %}
+                      <i class="ti ti-circle-filled" aria-hidden="true"></i> Faible
+                    {% elif r.risque == "moyen" %}
+                      <i class="ti ti-circle-filled" aria-hidden="true"></i> Moyen
+                    {% elif r.risque == "eleve" %}
+                      <i class="ti ti-alert-triangle" aria-hidden="true"></i> Élevé
+                    {% else %}
+                      <i class="ti ti-alert-circle" aria-hidden="true"></i> Critique
+                    {% endif %}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Évolution mensuelle -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-chart-bar" aria-hidden="true"></i>
+          Évolution mensuelle
+        </div>
+        {% for m in stats.evolution_mensuelle %}
+        <div class="bar-row">
+          <div class="bar-label">{{ m.mois }}</div>
+          <div class="bar-outer">
+            <div class="bar-inner" style="background:#378add; width:{% widthratio m.verifications 141000 100 %}%; opacity:.75;"></div>
+          </div>
+          <div class="bar-val" style="color:#185fa5;">{{ m.verifications }}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"></div>
+          <div class="bar-outer">
+            <div class="bar-inner" style="background:#e24b4a; width:{% widthratio m.contrefaits 820 100 %}%;"></div>
+          </div>
+          <div class="bar-val" style="color:#a32d2d; font-size:11px;">{{ m.contrefaits }}</div>
+        </div>
+        {% endfor %}
+        <div style="margin-top:10px; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#27500a;">
+          <i class="ti ti-trending-down" style="font-size:16px;" aria-hidden="true"></i>
+          Tendance contrefaçons : -40% sur 6 mois
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── COLONNE LATÉRALE ── -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Alertes récentes -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+          Alertes récentes
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for a in stats.alertes_recentes %}
+          <div class="alerte-item {% if a.gravite == 'haute' %}alerte-haute{% else %}alerte-moyenne{% endif %}">
+            <div class="alerte-prod">{{ a.produit }}</div>
+            <div class="alerte-zone">
+              <i class="ti ti-map-pin" aria-hidden="true"></i>
+              {{ a.zone }}
+            </div>
+            <div class="alerte-footer">
+              <span style="font-size:11px; color:#9ca3af;">{{ a.date }}</span>
+              <span class="badge {% if a.gravite == 'haute' %}badge-critique{% else %}badge-alerte{% endif %}" style="font-size:10px;">
+                <i class="ti {% if a.gravite == 'haute' %}ti-alert-circle{% else %}ti-alert-triangle{% endif %}" aria-hidden="true"></i>
+                {{ a.gravite|upper }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Rapport IA -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-brain" aria-hidden="true"></i>
+          Rapport IA
+        </div>
+        <div>
+          <div class="ia-item">
+            <div class="ia-item-head" style="color:#185fa5;">
+              <i class="ti ti-calendar" aria-hidden="true"></i>
+              <strong style="color:#0c447c;">Saison des pluies (juil–sept.)</strong>
+            </div>
+            Augmentation prévue de 45 % de la demande en antipaludéens.
+          </div>
+          <div class="ia-item">
+            <div class="ia-item-head" style="color:#854f0b;">
+              <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+              <strong style="color:#633806;">Réseau suspect détecté</strong>
+            </div>
+            Schéma anormal dans les Hauts-Bassins. 3 points de vente non homologués.
+          </div>
+          <div class="ia-item">
+            <div class="ia-item-head" style="color:#0d6e35;">
+              <i class="ti ti-circle-check" aria-hidden="true"></i>
+              <strong style="color:#27500a;">Impact global positif</strong>
+            </div>
+            Réduction estimée de 40 % des contrefaçons depuis le déploiement.
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-bolt" aria-hidden="true"></i>
+          Actions rapides
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-danger btn-block" onclick="alert('Alerte envoyée à toutes les pharmacies ✓ (simulation)')">
+            <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+            Déclencher alerte régionale
+          </button>
+          <button class="btn btn-outline btn-block" onclick="alert('Rapport mensuel généré ✓ (simulation)')">
+            <i class="ti ti-file-text" aria-hidden="true"></i>
+            Générer rapport mensuel
+          </button>
+          <button class="btn btn-outline btn-block" onclick="alert('Données exportées CSV ✓ (simulation)')">
+            <i class="ti ti-download" aria-hidden="true"></i>
+            Exporter les données
+          </button>
+          <button class="btn btn-outline btn-block" onclick="alert('Blockchain synchronisée — 1 284 592 transactions ✓')">
+            <i class="ti ti-link" aria-hidden="true"></i>
+            Synchroniser blockchain
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

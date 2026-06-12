@@ -1,0 +1,331 @@
+{% extends "tiim/base.html" %}
+{% block title %}TIÏM – Interface Fabricant{% endblock %}
+{% block content %}
+<style>
+  .page-header {
+    background: linear-gradient(150deg, #2a1a00 0%, #633806 55%, #854f0b 100%);
+    color: #fff; padding: 28px 24px 40px;
+  }
+  .page-header-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-icon {
+    width: 52px; height: 52px; background: rgba(255,255,255,.12);
+    border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .header-icon i { font-size: 26px; color: #fff; }
+  .header-licence {
+    margin-left: auto; text-align: right;
+    font-size: 12px; opacity: .7;
+  }
+  .header-licence strong { opacity: 1; font-family: monospace; font-size: 13px; }
+
+  .fab-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+  @media (max-width: 900px) { .fab-grid { grid-template-columns: 1fr; } }
+
+  .qr-mini {
+    width: 48px; height: 48px; background: #111;
+    border-radius: 4px; margin: 0 auto 6px; position: relative; overflow: hidden;
+  }
+  .qr-mini::after {
+    content: ''; position: absolute; inset: 3px;
+    background:
+      repeating-linear-gradient(0deg,  #111 0,#111 4px,#fff 4px,#fff 8px),
+      repeating-linear-gradient(90deg, #111 0,#111 4px,#fff 4px,#fff 8px);
+    background-blend-mode: xor; background-size: 8px 8px;
+  }
+
+  .blockchain-terminal {
+    background: #0d1117; border-radius: 10px;
+    padding: 16px; font-family: monospace;
+    font-size: 12px; color: #3b6d11; line-height: 1.9;
+    margin-top: 16px;
+  }
+  .bloc {
+    border: 0.5px solid #27500a; border-radius: 6px;
+    padding: 8px 12px; margin: 6px 0;
+    background: rgba(43,165,100,.08);
+  }
+  .bloc-hash { color: #4b5563; font-size: 10px; margin-top: 2px; }
+
+  .crypto-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  }
+  .crypto-row .label { display: flex; align-items: center; gap: 8px; color: #6b7280; }
+  .crypto-row .label i { font-size: 16px; }
+
+  .side-stat {
+    text-align: center; padding: 16px 12px;
+    background: #f9fafb; border-radius: 10px;
+    border: 0.5px solid #e5e7eb;
+  }
+  .side-stat .val { font-size: 26px; font-weight: 800; line-height: 1; }
+  .side-stat .lbl { font-size: 12px; color: #6b7280; margin-top: 5px; }
+
+  .conform-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 0.5px solid #f3f4f6;
+    font-size: 13px; color: #374151;
+  }
+  .conform-item:last-child { border-bottom: none; }
+  .conform-item i { font-size: 15px; color: #27500a; flex-shrink: 0; }
+
+  .certif-badge {
+    margin-top: 14px; padding: 12px;
+    background: #eaf3de; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; font-size: 13px; font-weight: 700; color: #27500a;
+  }
+  .certif-badge i { font-size: 18px; }
+</style>
+
+<!-- ── EN-TÊTE ── -->
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="header-icon">
+      <i class="ti ti-building-factory-2" aria-hidden="true"></i>
+    </div>
+    <div>
+      <h1 style="font-size:21px; font-weight:700; margin-bottom:4px;">Interface Fabricant — PharmaBF Ouagadougou</h1>
+      <p style="font-size:13px; opacity:.75; display:flex; align-items:center; gap:12px;">
+        <span><i class="ti ti-qrcode" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Génération QR codes</span>
+        <span><i class="ti ti-link" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Blockchain</span>
+        <span><i class="ti ti-shield-check" style="font-size:14px; vertical-align:-2px;" aria-hidden="true"></i> Intégration ANRP</span>
+      </p>
+    </div>
+    <div class="header-licence">
+      Licence ANRP<br>
+      <strong>ANRP-FAB-2024-0042</strong>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="fab-grid">
+
+    <!-- ── COLONNE PRINCIPALE ── -->
+    <div>
+
+      <!-- Formulaire génération -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">
+          <i class="ti ti-settings" aria-hidden="true"></i>
+          Générer un nouveau lot
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Médicament</label>
+              <select name="produit">
+                <option>Artémisinine 80mg</option>
+                <option>Amoxicilline 500mg</option>
+                <option>Paracétamol 1000mg</option>
+                <option>Métronidazole 250mg</option>
+                <option>Cotrimoxazole 480mg</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Quantité à produire</label>
+              <input type="number" name="quantite" value="5000" min="100" max="100000" step="100">
+            </div>
+          </div>
+          <div style="margin-top:14px; padding:12px 14px; background:#faeeda; border-radius:8px; font-size:13px; color:#633806; display:flex; align-items:flex-start; gap:8px; border-left:3px solid #854f0b; border-radius:0;">
+            <i class="ti ti-lock" style="font-size:16px; margin-top:1px; flex-shrink:0;" aria-hidden="true"></i>
+            <span>Chaque unité recevra un QR code unique crypté <strong>AES-256 + ECDSA</strong>, enregistré automatiquement sur la blockchain Hyperledger.</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px; padding:13px;">
+            <i class="ti ti-rocket" aria-hidden="true"></i>
+            Générer les QR codes et enregistrer sur blockchain
+          </button>
+        </form>
+      </div>
+
+      <!-- Résultat génération -->
+      {% if nouveau_lot %}
+      <div class="card" style="border:1.5px solid #97c459; margin-bottom:20px;">
+        <div class="card-title" style="color:#27500a;">
+          <i class="ti ti-circle-check" aria-hidden="true"></i>
+          Lot généré avec succès !
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div style="background:#eaf3de; border-radius:8px; padding:14px; text-align:center;">
+            <div style="font-size:26px; font-weight:800; color:#27500a;">{{ nouveau_lot.quantite }}</div>
+            <div style="font-size:12px; color:#6b7280; margin-top:4px;">Codes générés</div>
+          </div>
+          <div style="background:#e6f1fb; border-radius:8px; padding:14px; text-align:center;">
+            <div style="font-size:14px; font-weight:800; color:#0c447c; font-family:monospace; word-break:break-all;">{{ nouveau_lot.ref }}</div>
+            <div style="font-size:12px; color:#6b7280; margin-top:4px;">Référence lot</div>
+          </div>
+          <div style="background:#eaf3de; border-radius:8px; padding:14px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
+            <i class="ti ti-link" style="font-size:22px; color:#27500a;" aria-hidden="true"></i>
+            <div style="font-size:12px; color:#27500a; font-weight:700;">Blockchain enregistré</div>
+          </div>
+        </div>
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:#374151;">Aperçu des 5 premiers codes :</div>
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px;">
+          {% for code in nouveau_lot.codes %}
+          <div style="background:#f9fafb; border:0.5px solid #e5e7eb; border-radius:8px; padding:10px; text-align:center;">
+            <div class="qr-mini"></div>
+            <div style="font-size:8px; font-family:monospace; color:#9ca3af; word-break:break-all; margin-top:2px;">{{ code }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="blockchain-terminal">
+          <div class="bloc">
+            <div style="color:#97c459;"><i class="ti ti-check" style="font-size:12px;" aria-hidden="true"></i> BLOC #{{ nouveau_lot.ref|slice:"-3:" }}4821 — {{ nouveau_lot.quantite }} codes enregistrés</div>
+            <div class="bloc-hash">Hash: 0x7f3a...d29e &nbsp;|&nbsp; Prev: 0x1b8c...f041 &nbsp;|&nbsp; Nonce: 847291</div>
+          </div>
+          <div style="color:#4b5563;">→ Propagation sur 12 nœuds du réseau... <span style="color:#97c459;">✓</span></div>
+          <div style="color:#4b5563;">→ Validation ANRP... <span style="color:#97c459;">✓</span></div>
+          <div style="color:#4b5563;">→ Notification distributeurs agréés... <span style="color:#97c459;">✓</span></div>
+          <div style="color:#e5e7eb; margin-top:8px; font-size:11px;">Lot {{ nouveau_lot.ref }} — {{ nouveau_lot.produit }} — Certifié ✓</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Table des lots -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-list" aria-hidden="true"></i>
+          Lots de production
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Date</th>
+                <th>Progression</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lot in lots %}
+              <tr>
+                <td><span style="font-family:monospace; font-weight:700; font-size:13px;">{{ lot.id }}</span></td>
+                <td>{{ lot.produit }}</td>
+                <td>{{ lot.qte }}</td>
+                <td style="color:#6b7280; font-size:13px;">{{ lot.date }}</td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="progress-bar" style="width:80px; flex-shrink:0;">
+                      <div class="progress-fill {% if lot.statut == 'enregistré' %}progress-vert{% else %}progress-or{% endif %}" style="width:{% widthratio lot.codes_generes lot.qte 100 %}%;"></div>
+                    </div>
+                    <span style="font-size:12px; color:#6b7280;">{{ lot.codes_generes }}/{{ lot.qte }}</span>
+                  </div>
+                </td>
+                <td>
+                  {% if lot.statut == "enregistré" %}
+                    <span class="badge badge-authentique">
+                      <i class="ti ti-check" aria-hidden="true"></i> Blockchain ✓
+                    </span>
+                  {% else %}
+                    <span class="badge badge-alerte">
+                      <i class="ti ti-clock" aria-hidden="true"></i> En cours
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── COLONNE LATÉRALE ── -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Sécurité cryptographique -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-lock" aria-hidden="true"></i>
+          Sécurité cryptographique
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="crypto-row" style="background:#eaf3de;">
+            <span class="label"><i class="ti ti-key" aria-hidden="true"></i> Chiffrement</span>
+            <strong style="color:#27500a; font-size:13px;">AES-256</strong>
+          </div>
+          <div class="crypto-row" style="background:#e6f1fb;">
+            <span class="label"><i class="ti ti-pencil" aria-hidden="true"></i> Signature</span>
+            <strong style="color:#0c447c; font-size:13px;">ECDSA</strong>
+          </div>
+          <div class="crypto-row" style="background:#eaf3de;">
+            <span class="label"><i class="ti ti-link" aria-hidden="true"></i> Blockchain</span>
+            <strong style="color:#27500a; font-size:13px;">Hyperledger Fabric</strong>
+          </div>
+          <div class="crypto-row" style="background:#faeeda;">
+            <span class="label"><i class="ti ti-bolt" aria-hidden="true"></i> Débit</span>
+            <strong style="color:#633806; font-size:13px;">1 000+ tx/sec</strong>
+          </div>
+          <div class="crypto-row" style="background:#eaf3de;">
+            <span class="label"><i class="ti ti-circle-check" aria-hidden="true"></i> Vérification</span>
+            <strong style="color:#27500a; font-size:13px;">3 secondes</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistiques -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-chart-bar" aria-hidden="true"></i>
+          Mes statistiques
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="side-stat">
+            <div class="val" style="color:#0d6e35;">18 000</div>
+            <div class="lbl">QR codes générés ce mois</div>
+          </div>
+          <div class="side-stat">
+            <div class="val" style="color:#185fa5;">3</div>
+            <div class="lbl">Lots enregistrés ce mois</div>
+          </div>
+          <div class="side-stat">
+            <div class="val" style="color:#854f0b;">5 412</div>
+            <div class="lbl">Scans de vos médicaments</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conformité ANRP -->
+      <div class="card">
+        <div class="card-title">
+          <i class="ti ti-building-bank" aria-hidden="true"></i>
+          Conformité ANRP
+        </div>
+        <div>
+          <div class="conform-item">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            Licence active : <strong style="margin-left:4px;">ANRP-FAB-2024-0042</strong>
+          </div>
+          <div class="conform-item">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            Tous les lots certifiés AMM
+          </div>
+          <div class="conform-item">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            Données partagées en temps réel
+          </div>
+          <div class="conform-item">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            Conformité RGPD-BF
+          </div>
+        </div>
+        <div class="certif-badge">
+          <i class="ti ti-award" aria-hidden="true"></i>
+          Fabricant certifié TIÏM YOULGMDE — Niveau Or
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

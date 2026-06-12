@@ -1,0 +1,417 @@
+{% extends "tiim/base.html" %}
+{% block title %}TIÏM – Vérification Patient{% endblock %}
+{% block content %}
+<style>
+  .app-header {
+    background: linear-gradient(150deg, #053518 0%, #0d6e35 55%, #17a355 100%);
+    color: #fff; padding: 36px 24px 56px; text-align: center;
+  }
+  .app-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .app-header p  { font-size: 14px; opacity: .8; max-width: 380px; margin: 0 auto; line-height: 1.55; }
+
+  .header-icon {
+    width: 56px; height: 56px; background: rgba(255,255,255,.15);
+    border-radius: 14px; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 14px;
+  }
+  .header-icon i { font-size: 28px; color: #fff; }
+
+  .demo-codes {
+    background: rgba(255,255,255,.12);
+    border: 0.5px solid rgba(255,255,255,.25);
+    border-radius: 10px; padding: 14px 18px;
+    margin: 20px auto 0; font-size: 13px; max-width: 440px;
+  }
+  .demo-codes-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+    opacity: .75; margin-bottom: 10px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-codes-label i { font-size: 13px; }
+  .demo-rows { display: flex; flex-direction: column; gap: 6px; }
+  .demo-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,.1); border-radius: 7px; padding: 7px 12px;
+    text-decoration: none; color: #fff; transition: background .15s;
+  }
+  .demo-row:hover { background: rgba(255,255,255,.22); }
+  .demo-row-code { font-family: monospace; font-size: 13px; font-weight: 600; }
+  .demo-row-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 9px;
+    border-radius: 100px; display: flex; align-items: center; gap: 4px;
+  }
+  .demo-row-badge i { font-size: 11px; }
+  .db-ok   { background: #eaf3de; color: #27500a; }
+  .db-warn { background: #faeeda; color: #633806; }
+  .db-err  { background: #fcebeb; color: #791f1f; }
+
+  .scan-zone {
+    max-width: 500px; margin: -24px auto 0;
+    padding: 0 16px; position: relative; z-index: 2;
+  }
+  .scan-card {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.14); padding: 24px;
+  }
+
+  .scan-tabs { display: flex; background: #f3f4f6; border-radius: 10px; padding: 4px; margin-bottom: 22px; }
+  .scan-tab {
+    flex: 1; text-align: center; padding: 9px 4px;
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; background: transparent;
+    color: #9ca3af; display: flex; align-items: center;
+    justify-content: center; gap: 5px; transition: background .15s, color .15s;
+  }
+  .scan-tab i { font-size: 15px; }
+  .scan-tab.active { background: #fff; color: #111827; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+  .qr-zone {
+    border: 1.5px dashed #d1d5db; border-radius: 12px;
+    padding: 36px 24px; text-align: center; margin-bottom: 16px;
+    cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .qr-zone:hover { border-color: #0d6e35; background: #eaf3de; }
+  .qr-zone-icon {
+    width: 60px; height: 60px; background: #eaf3de; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+  }
+  .qr-zone-icon i { font-size: 28px; color: #27500a; }
+  .qr-zone p { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+  .qr-zone small { font-size: 12px; color: #d1d5db; }
+
+  .scratch-zone {
+    background: #c8c8c8; border-radius: 12px;
+    padding: 28px; text-align: center; cursor: pointer;
+    transition: background .2s;
+  }
+  .scratch-zone:hover { background: #b8b8b8; }
+  .scratch-zone p { color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .scratch-hint { color: rgba(255,255,255,.75); font-size: 12px; }
+  #scratch-reveal {
+    display: none; background: #fff; border-radius: 8px;
+    padding: 16px; font-size: 22px; font-weight: 800;
+    font-family: monospace; letter-spacing: 4px; color: #0d6e35;
+  }
+
+  .langues { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+  .langue-btn {
+    padding: 6px 13px; border-radius: 100px;
+    border: 1.5px solid #e5e7eb; font-size: 12px; font-weight: 600;
+    background: transparent; cursor: pointer; color: #9ca3af;
+    transition: border-color .15s, color .15s;
+  }
+  .langue-btn.active, .langue-btn:hover { border-color: #0d6e35; color: #27500a; }
+
+  .resultat-card { border-radius: 14px; padding: 28px 22px; text-align: center; margin-top: 20px; }
+  .resultat-authentique { background: #eaf3de; border: 1.5px solid #97c459; }
+  .resultat-suspect      { background: #faeeda; border: 1.5px solid #ef9f27; }
+  .resultat-contrefait   { background: #fcebeb; border: 1.5px solid #e24b4a; }
+  .resultat-introuvable  { background: #f9fafb; border: 1.5px solid #d1d5db; }
+
+  .resultat-icon-wrap {
+    width: 64px; height: 64px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .resultat-icon-wrap i { font-size: 32px; }
+  .ri-ok   { background: #c0dd97; }
+  .ri-ok i { color: #27500a; }
+  .ri-warn   { background: #fac775; }
+  .ri-warn i { color: #633806; }
+  .ri-err   { background: #f09595; }
+  .ri-err i { color: #791f1f; }
+  .ri-unk   { background: #e5e7eb; }
+  .ri-unk i { color: #6b7280; }
+
+  .resultat-titre { font-size: 20px; font-weight: 800; margin-bottom: 8px; letter-spacing: -.3px; }
+  .resultat-authentique .resultat-titre { color: #27500a; }
+  .resultat-suspect      .resultat-titre { color: #633806; }
+  .resultat-contrefait   .resultat-titre { color: #791f1f; }
+  .resultat-introuvable  .resultat-titre { color: #6b7280; }
+
+  .resultat-details {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    text-align: left; margin-top: 18px;
+    max-width: 480px; margin-left: auto; margin-right: auto;
+  }
+  .resultat-detail-item { background: rgba(255,255,255,.75); border-radius: 8px; padding: 10px 13px; }
+  .resultat-detail-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; }
+  .resultat-detail-valeur { font-size: 14px; font-weight: 600; color: #111827; margin-top: 2px; }
+
+  .last-scan {
+    margin-top: 14px; font-size: 13px; color: #6b7280;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .last-scan i { font-size: 14px; }
+</style>
+
+<!-- ── EN-TÊTE ── -->
+<div class="app-header">
+  <div class="header-icon">
+    <i class="ti ti-device-mobile" aria-hidden="true"></i>
+  </div>
+  <h1>Vérification patient</h1>
+  <p>Scannez ou saisissez le code de votre médicament pour vérifier son authenticité en 3 secondes</p>
+
+  <div class="demo-codes">
+    <div class="demo-codes-label">
+      <i class="ti ti-flask" aria-hidden="true"></i>
+      Codes de démo — cliquez pour tester
+    </div>
+    <div class="demo-rows">
+      <a class="demo-row" href="?_demo=TY-2024-0042-A1">
+        <span class="demo-row-code">TY-2024-0042-A1</span>
+        <span class="demo-row-badge db-ok"><i class="ti ti-circle-check" aria-hidden="true"></i> Authentique</span>
+      </a>
+      <a class="demo-row" href="?_demo=TY-2024-0099-B2">
+        <span class="demo-row-code">TY-2024-0099-B2</span>
+        <span class="demo-row-badge db-warn"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Suspect</span>
+      </a>
+      <a class="demo-row" href="?_demo=TY-2024-FAKE-XX">
+        <span class="demo-row-code">TY-2024-FAKE-XX</span>
+        <span class="demo-row-badge db-err"><i class="ti ti-ban" aria-hidden="true"></i> Contrefait</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ── ZONE DE SCAN ── -->
+<div class="scan-zone">
+  <div class="scan-card">
+
+    <div class="scan-tabs">
+      <button class="scan-tab active" onclick="showTab('qr',this)">
+        <i class="ti ti-qrcode" aria-hidden="true"></i> Scanner QR
+      </button>
+      <button class="scan-tab" onclick="showTab('code',this)">
+        <i class="ti ti-keyboard" aria-hidden="true"></i> Saisir le code
+      </button>
+      <button class="scan-tab" onclick="showTab('gratter',this)">
+        <i class="ti ti-ticket" aria-hidden="true"></i> Gratter
+      </button>
+    </div>
+
+    <!-- Onglet QR -->
+    <div id="tab-qr">
+      <div class="qr-zone" onclick="simulateScan()">
+        <div class="qr-zone-icon">
+          <i class="ti ti-camera" aria-hidden="true"></i>
+        </div>
+        <p>Appuyez pour simuler le scan</p>
+        <small>Simulation — dans l'app réelle : caméra en direct</small>
+      </div>
+      <form method="post" id="form-qr" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="code_qr" id="hidden-code-qr">
+      </form>
+    </div>
+
+    <!-- Onglet code manuel -->
+    <div id="tab-code" style="display:none;">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Code unique du médicament</label>
+          <input type="text" name="code_qr" id="code_qr"
+            placeholder="Ex: TY-2024-0042-A1"
+            value="{{ code_saisi }}"
+            style="font-family:monospace; font-size:15px; text-transform:uppercase;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="padding:13px;">
+          <i class="ti ti-search" aria-hidden="true"></i>
+          Vérifier l'authenticité
+        </button>
+      </form>
+    </div>
+
+    <!-- Onglet gratter -->
+    <div id="tab-gratter" style="display:none;">
+      <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">Grattez la pastille sous l'emballage :</p>
+      <div class="scratch-zone" onclick="gratter()">
+        <p><i class="ti ti-ticket" style="font-size:16px; vertical-align:-2px;" aria-hidden="true"></i> Pastille à gratter</p>
+        <div id="scratch-reveal">5 8 2 4 - 7 3 1 9</div>
+        <div id="scratch-hint" class="scratch-hint">Cliquez ici pour gratter</div>
+      </div>
+      <form method="post" style="margin-top:14px;">
+        {% csrf_token %}
+        <input type="text" name="code_qr" id="scratch-input"
+          placeholder="Entrez le code révélé"
+          style="font-family:monospace; font-size:17px; text-align:center; margin-bottom:12px;">
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="ti ti-phone" aria-hidden="true"></i>
+          Vérifier via numéro vert
+        </button>
+      </form>
+      <p style="font-size:12px; color:#9ca3af; text-align:center; margin-top:10px;">
+        Ou appelez le <strong style="color:#111827;">1818</strong> (numéro vert gratuit)
+      </p>
+    </div>
+
+    <!-- Sélecteur de langue -->
+    <div class="langues">
+      <button class="langue-btn active">Français</button>
+      <button class="langue-btn">Mooré</button>
+      <button class="langue-btn">Dioula</button>
+      <button class="langue-btn">Fulfuldé</button>
+    </div>
+  </div>
+
+  <!-- ── RÉSULTATS ── -->
+  {% if resultat %}
+
+    {% if resultat.statut == "authentique" %}
+    <div class="resultat-card resultat-authentique">
+      <div class="resultat-icon-wrap ri-ok">
+        <i class="ti ti-circle-check" aria-hidden="true"></i>
+      </div>
+      <div class="resultat-titre">Médicament authentique</div>
+      <p style="color:#3b6d11; font-size:14px; margin-bottom:12px;">Ce médicament est certifié conforme.</p>
+      <span class="badge badge-authentique">
+        <i class="ti ti-link" aria-hidden="true"></i> Enregistré sur Blockchain
+      </span>
+      <div class="resultat-details">
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Médicament</div>
+          <div class="resultat-detail-valeur">{{ resultat.nom }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Fabricant</div>
+          <div class="resultat-detail-valeur">{{ resultat.fabricant }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">N° de lot</div>
+          <div class="resultat-detail-valeur" style="font-family:monospace;">{{ resultat.lot }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Expiration</div>
+          <div class="resultat-detail-valeur">{{ resultat.expiration }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Classe</div>
+          <div class="resultat-detail-valeur">{{ resultat.classe }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Vérifications</div>
+          <div class="resultat-detail-valeur">{{ resultat.nb_verifications }} fois</div>
+        </div>
+      </div>
+      <div class="last-scan">
+        <i class="ti ti-map-pin" aria-hidden="true"></i>
+        Dernier point de vente : <strong style="color:#111827; margin-left:3px;">{{ resultat.dernier_scan }}</strong>
+      </div>
+    </div>
+
+    {% elif resultat.statut == "suspect" %}
+    <div class="resultat-card resultat-suspect">
+      <div class="resultat-icon-wrap ri-warn">
+        <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+      </div>
+      <div class="resultat-titre">Médicament suspect</div>
+      <p style="color:#633806; font-size:14px; margin-bottom:14px;">Ne pas consommer. Contactez un professionnel de santé.</p>
+      <div class="resultat-details">
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">Médicament</div>
+          <div class="resultat-detail-valeur">{{ resultat.nom }}</div>
+        </div>
+        <div class="resultat-detail-item">
+          <div class="resultat-detail-label">N° lot déclaré</div>
+          <div class="resultat-detail-valeur" style="font-family:monospace;">{{ resultat.lot }}</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <a href="#" class="btn btn-danger btn-block" onclick="alert('Signalement envoyé aux autorités ✓ (simulation)')">
+          <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+          Signaler aux autorités
+        </a>
+      </div>
+    </div>
+
+    {% elif resultat.statut == "contrefait" %}
+    <div class="resultat-card resultat-contrefait">
+      <div class="resultat-icon-wrap ri-err">
+        <i class="ti ti-ban" aria-hidden="true"></i>
+      </div>
+      <div class="resultat-titre">Médicament contrefait !</div>
+      <p style="color:#791f1f; font-size:14px; font-weight:700; margin-bottom:16px;">
+        <i class="ti ti-alert-circle" style="font-size:15px; vertical-align:-2px;" aria-hidden="true"></i>
+        DANGER — Ne consommez PAS ce médicament.
+      </p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="#" class="btn btn-danger" onclick="alert('Signalement urgent envoyé à l\'ANRP ✓ (simulation)')">
+          <i class="ti ti-bell-ringing" aria-hidden="true"></i> Signalement urgent
+        </a>
+        <a href="tel:1818" class="btn btn-outline">
+          <i class="ti ti-phone" aria-hidden="true"></i> Appeler le 1818
+        </a>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="resultat-card resultat-introuvable">
+      <div class="resultat-icon-wrap ri-unk">
+        <i class="ti ti-question-mark" aria-hidden="true"></i>
+      </div>
+      <div class="resultat-titre">Code introuvable</div>
+      <p style="color:#6b7280; font-size:14px;">
+        Le code <strong style="font-family:monospace; color:#111827;">{{ resultat.code }}</strong> n'est pas dans notre base de données.
+      </p>
+      <p style="font-size:13px; margin-top:10px; color:#791f1f;">
+        Cela peut indiquer un médicament non homologué.
+      </p>
+      <div style="margin-top:16px;">
+        <a href="#" class="btn btn-danger btn-block" onclick="alert('Signalement envoyé ✓ (simulation)')">
+          <i class="ti ti-bell-ringing" aria-hidden="true"></i> Signaler ce médicament
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:14px; text-align:center;">
+      <a href="{% url 'patient' %}" class="btn btn-outline">
+        <i class="ti ti-arrow-left" aria-hidden="true"></i> Nouvelle vérification
+      </a>
+    </div>
+
+  {% endif %}
+</div>
+
+<div style="height:48px;"></div>
+
+<script>
+function showTab(name, btn) {
+  ['qr','code','gratter'].forEach(t => document.getElementById('tab-'+t).style.display='none');
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.scan-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+const DEMO_CODES = ['TY-2024-0042-A1','TY-2024-0099-B2','TY-2025-0017-C3','TY-2024-FAKE-XX'];
+function simulateScan() {
+  const code = DEMO_CODES[Math.floor(Math.random()*DEMO_CODES.length)];
+  document.getElementById('hidden-code-qr').value = code;
+  const zone = document.querySelector('.qr-zone');
+  zone.innerHTML = '<div style="text-align:center;padding:8px 0;"><div style="width:40px;height:40px;border:3px solid #0d6e35;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;"></div><p style="font-size:13px;color:#6b7280;">Analyse en cours…</p></div>';
+  setTimeout(() => document.getElementById('form-qr').submit(), 900);
+}
+function gratter() {
+  document.getElementById('scratch-reveal').style.display='block';
+  document.getElementById('scratch-hint').style.display='none';
+  document.getElementById('scratch-input').value='58247319';
+}
+const urlParams = new URLSearchParams(window.location.search);
+const demoCode = urlParams.get('_demo');
+if (demoCode) {
+  const inp = document.getElementById('code_qr');
+  if (inp) inp.value = demoCode;
+  const f = document.querySelector('#tab-code form');
+  if (f) f.submit();
+}
+document.querySelectorAll('.langue-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.langue-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    if (this.textContent.trim() !== 'Français')
+      alert('Interface en '+this.textContent.trim()+' — disponible dans la version finale 🌍');
+  });
+});
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+{% endblock %}
